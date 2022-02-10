@@ -1,0 +1,21 @@
+{
+  "name": "lobster-infra-demo",
+  "devDependencies": {
+    "@types/node": "^14",
+    "@typescript-eslint/eslint-plugin": "^4.0.1",
+    "@typescript-eslint/parser": "^4.0.1",
+    "eslint": "^7.12.1",
+    "eslint-config-prettier": "^8.3.0",
+    "eslint-config-standard-with-typescript": "^21.0.1",
+    "prettier": "^2.5.1",
+    "ts-standard": "^11.0.0",
+    "typescript": "^4.5.5"
+  },
+  "dependencies": {
+    "@pulumi/gcp": "^6.10.0",
+    "@pulumi/google-native": "^0.14.0",
+    "@pulumi/kubernetes": "^3.15.1",
+    "@pulumi/pulumi": "^3.23.0",
+    "@pulumi/random": "^4.3.1"
+  }
+}

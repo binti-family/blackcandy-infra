@@ -76,7 +76,7 @@ const sql = new classicSql.DatabaseInstance("db", {
   region: "us-west1",
   deletionProtection: false,
   settings: {
-    tier: "db-custom-2-7680",
+    tier: "db-custom-1-3840",
     availabilityType: "ZONAL",
     diskSize: 10,
     diskType: "PD_SSD",
@@ -94,7 +94,7 @@ const sql = new classicSql.DatabaseInstance("db", {
 });
 
 const sqlUser = new classicSql.User("db-user", {
-  name: "postgres",
+  name: "blackcandy",
   instance: sql.name,
   password: dbPassword.result,
   project: GCP_PROJECT_ID,
@@ -118,7 +118,7 @@ const secrets = new k8s.core.v1.Secret("db-secrets", {
     SECRET_KEY_BASE: railsSecret.result.apply(toBase64),
     DB_PASSWORD: dbPassword.result.apply(toBase64),
     DB_HOST: toBase64("localhost"),
-    DB_USER: toBase64("postgres"),
+    DB_USER: sqlUser.name.apply(toBase64),
   },
 });
 
@@ -257,17 +257,21 @@ const blackcandyService = new k8s.core.v1.Service(
 );
 
 const domain = `${NAMESPACE}.interviews.binti.engineering`;
-const certificate = new k8s.apiextensions.CustomResource("managed-tls-cert", {
-  apiVersion: "networking.gke.io/v1",
-  kind: "ManagedCertificate",
-  metadata: {
-    name: "blackcandy-cert",
-    namespace: NAMESPACE,
+const certificate = new k8s.apiextensions.CustomResource(
+  "managed-tls-cert",
+  {
+    apiVersion: "networking.gke.io/v1",
+    kind: "ManagedCertificate",
+    metadata: {
+      name: "blackcandy-cert",
+      namespace: NAMESPACE,
+    },
+    spec: {
+      domains: [domain],
+    },
   },
-  spec: {
-    domains: [domain],
-  },
-});
+  { provider: k8sProvider }
+);
 
 const sslPolicy = new cloudCompute.SslPolicy("ssl-policy", {
   minTlsVersion: "TLS_1_2",
@@ -291,7 +295,8 @@ const frontendConfig = new k8s.apiextensions.CustomResource(
         responseCodeName: "MOVED_PERMANENTLY_DEFAULT",
       },
     },
-  }
+  },
+  { provider: k8sProvider }
 );
 
 const ingress = new k8s.networking.v1.Ingress(
@@ -341,5 +346,4 @@ new cloudDns.ResourceRecordSet(`${NAMESPACE}.interviews.binti.engineering`, {
   rrdatas: ingress.status.loadBalancer.ingress.apply((entries) =>
     entries.map((entry) => entry.ip)
   ),
-  project: new pulumi.Config().requireSecret("hub-project"),
 });

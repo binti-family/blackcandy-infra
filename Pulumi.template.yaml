@@ -3,9 +3,7 @@ encryptedkey: CiQAwMXZ+W4U9IxaPOFxC+Ox6rQEUQ7W6Ir9c+wcNHSOcg0NISQSSQBc9cDo/TE7OM
 config:
   google-native:project:
     secure: v1:pvHUp8mowZNZnm5o:J/EhAWx6P2siQEtGd6DhwhR0QsMyX7pzWf+4HnhOcLkCzcQ1Y+GL4LE8Yhk=
-  lobster-infra-demo:gke-cluster-id:
+  blackcandy:gke-cluster-id:
     secure: v1:/902OCvj5t2ql6Uo:BqWny2xSbXfd7o+89QOSeO8I2Ew6dW7qWwgyL7O7SUVwAAI3Vo95zaU=
-  lobster-infra-demo:hub-project:
-    secure: v1:0H42oso5Zgqbp3M3:XCiHxRjUlM3Qu7t9c+My4aTN2dnz7W0BulDzRg==
-  lobster-infra-demo:vpc-id:
+  blackcandy:vpc-id:
     secure: v1:GGBhDlCtLhTeN56M:bDVS/rO5hv27VNhyMP15g6BZ0yoD0GnZCaQ+fFSrMrynrOLOrNk=

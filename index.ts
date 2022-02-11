@@ -2,13 +2,14 @@ import * as cloudContainer from "@pulumi/google-native/container/v1";
 import * as pulumi from "@pulumi/pulumi";
 import { Output } from "@pulumi/pulumi";
 import * as k8s from "@pulumi/kubernetes";
-import * as cloudSql from "@pulumi/google-native/sqladmin/v1beta4";
+import * as classicSql from "@pulumi/gcp/sql";
 import * as random from "@pulumi/random";
 import { RandomPassword } from "@pulumi/random";
 import * as cloudDns from "@pulumi/google-native/dns/v1";
+import * as cloudCompute from "@pulumi/google-native/compute/v1";
 
 const PULUMI_CONFIG = new pulumi.Config();
-const NAMESPACE = `${pulumi.getStack()}-test`;
+const NAMESPACE = `${pulumi.getStack()}`;
 const GCP_PROJECT_ID = new pulumi.Config("google-native").requireSecret(
   "project"
 );
@@ -67,19 +68,18 @@ const k8sProvider = new k8s.Provider("gke-provider", {
 
 const dbPassword = new random.RandomPassword("db-pw", {
   length: 30,
+  special: false,
 });
 
-const sql = new cloudSql.Instance("db", {
+const sql = new classicSql.DatabaseInstance("db", {
   databaseVersion: "POSTGRES_14",
-  gceZone: "us-west1-c",
-  instanceType: "CLOUD_SQL_INSTANCE",
   region: "us-west1",
-  rootPassword: dbPassword.result,
+  deletionProtection: false,
   settings: {
     tier: "db-custom-2-7680",
     availabilityType: "ZONAL",
-    dataDiskSizeGb: "20",
-    dataDiskType: "PD_SSD",
+    diskSize: 10,
+    diskType: "PD_SSD",
     ipConfiguration: {
       ipv4Enabled: false,
       privateNetwork: pulumi.interpolate`projects/${GCP_PROJECT_ID}/global/networks/${PULUMI_CONFIG.requireSecret(
@@ -87,16 +87,22 @@ const sql = new cloudSql.Instance("db", {
       )}`,
       requireSsl: true,
     },
-    storageAutoResizeLimit: "50",
-    userLabels: {
-      purpose: "devops-interview",
-    },
+    diskAutoresize: true,
+    diskAutoresizeLimit: 50,
   },
+  project: GCP_PROJECT_ID,
+});
+
+const sqlUser = new classicSql.User("db-user", {
+  name: "postgres",
+  instance: sql.name,
+  password: dbPassword.result,
   project: GCP_PROJECT_ID,
 });
 
 const railsSecret = new RandomPassword("rails-secret", {
   length: 30,
+  special: false,
 });
 
 function toBase64(payload: string): string {
@@ -219,7 +225,7 @@ const deployment = new k8s.apps.v1.Deployment(
       },
     },
   },
-  { provider: k8sProvider }
+  { provider: k8sProvider, dependsOn: [sqlUser] }
 );
 
 const blackcandyService = new k8s.core.v1.Service(
@@ -263,6 +269,12 @@ const certificate = new k8s.apiextensions.CustomResource("managed-tls-cert", {
   },
 });
 
+const sslPolicy = new cloudCompute.SslPolicy("ssl-policy", {
+  minTlsVersion: "TLS_1_2",
+  profile: "MODERN",
+  project: GCP_PROJECT_ID,
+});
+
 const frontendConfig = new k8s.apiextensions.CustomResource(
   "front-end-config",
   {
@@ -273,6 +285,7 @@ const frontendConfig = new k8s.apiextensions.CustomResource(
       namespace: NAMESPACE,
     },
     spec: {
+      sslPolicy: sslPolicy.name,
       redirectToHttps: {
         enabled: true,
         responseCodeName: "MOVED_PERMANENTLY_DEFAULT",

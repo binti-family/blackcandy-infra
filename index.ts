@@ -2,11 +2,9 @@ import * as cloudContainer from "@pulumi/google-native/container/v1";
 import * as pulumi from "@pulumi/pulumi";
 import { Output } from "@pulumi/pulumi";
 import * as k8s from "@pulumi/kubernetes";
-import * as classicSql from "@pulumi/gcp/sql";
-import * as random from "@pulumi/random";
 import { RandomPassword } from "@pulumi/random";
 import * as cloudDns from "@pulumi/google-native/dns/v1";
-import * as cloudCompute from "@pulumi/google-native/compute/v1";
+import CloudSqlComponent from "./cloudsql";
 
 const PULUMI_CONFIG = new pulumi.Config();
 const NAMESPACE = `${pulumi.getStack()}`;
@@ -66,38 +64,9 @@ const k8sProvider = new k8s.Provider("gke-provider", {
   ),
 });
 
-const dbPassword = new random.RandomPassword("db-pw", {
-  length: 30,
-  special: false,
-});
-
-const sql = new classicSql.DatabaseInstance("db", {
-  databaseVersion: "POSTGRES_14",
-  region: "us-west1",
-  deletionProtection: false,
-  settings: {
-    tier: "db-custom-1-3840",
-    availabilityType: "ZONAL",
-    diskSize: 10,
-    diskType: "PD_SSD",
-    ipConfiguration: {
-      ipv4Enabled: false,
-      privateNetwork: pulumi.interpolate`projects/${GCP_PROJECT_ID}/global/networks/${PULUMI_CONFIG.requireSecret(
-        "vpc-id"
-      )}`,
-      requireSsl: true,
-    },
-    diskAutoresize: true,
-    diskAutoresizeLimit: 50,
-  },
-  project: GCP_PROJECT_ID,
-});
-
-const sqlUser = new classicSql.User("db-user", {
+const db = new CloudSqlComponent({
   name: "blackcandy",
-  instance: sql.name,
-  password: dbPassword.result,
-  project: GCP_PROJECT_ID,
+  projectId: GCP_PROJECT_ID,
 });
 
 const railsSecret = new RandomPassword("rails-secret", {
@@ -116,9 +85,9 @@ const secrets = new k8s.core.v1.Secret("db-secrets", {
   },
   data: {
     SECRET_KEY_BASE: railsSecret.result.apply(toBase64),
-    DB_PASSWORD: dbPassword.result.apply(toBase64),
+    DB_PASSWORD: db.password.apply(toBase64),
     DB_HOST: toBase64("localhost"),
-    DB_USER: sqlUser.name.apply(toBase64),
+    DB_USER: db.user.name.apply(toBase64),
   },
 });
 
@@ -192,7 +161,7 @@ const deployment = new k8s.apps.v1.Deployment(
               image: "gcr.io/cloudsql-docker/gce-proxy:1.28.1",
               command: [
                 "/cloud_sql_proxy",
-                pulumi.interpolate`-instances=${sql.connectionName}=tcp:5432`,
+                pulumi.interpolate`-instances=${db.instance.connectionName}=tcp:5432`,
                 "-use_http_health_check",
               ],
               securityContext: {
@@ -225,7 +194,7 @@ const deployment = new k8s.apps.v1.Deployment(
       },
     },
   },
-  { provider: k8sProvider, dependsOn: [sqlUser] }
+  { provider: k8sProvider, dependsOn: [db.user] }
 );
 
 const blackcandyService = new k8s.core.v1.Service(
@@ -257,47 +226,6 @@ const blackcandyService = new k8s.core.v1.Service(
 );
 
 const domain = `${NAMESPACE}.interviews.binti.engineering`;
-const certificate = new k8s.apiextensions.CustomResource(
-  "managed-tls-cert",
-  {
-    apiVersion: "networking.gke.io/v1",
-    kind: "ManagedCertificate",
-    metadata: {
-      name: "blackcandy-cert",
-      namespace: NAMESPACE,
-    },
-    spec: {
-      domains: [domain],
-    },
-  },
-  { provider: k8sProvider }
-);
-
-const sslPolicy = new cloudCompute.SslPolicy("ssl-policy", {
-  minTlsVersion: "TLS_1_2",
-  profile: "MODERN",
-  project: GCP_PROJECT_ID,
-});
-
-const frontendConfig = new k8s.apiextensions.CustomResource(
-  "front-end-config",
-  {
-    apiVersion: "networking.gke.io/v1beta1",
-    kind: "FrontendConfig",
-    metadata: {
-      name: "http-redirect-to-https",
-      namespace: NAMESPACE,
-    },
-    spec: {
-      sslPolicy: sslPolicy.name,
-      redirectToHttps: {
-        enabled: true,
-        responseCodeName: "MOVED_PERMANENTLY_DEFAULT",
-      },
-    },
-  },
-  { provider: k8sProvider }
-);
 
 const ingress = new k8s.networking.v1.Ingress(
   "blackcandy",
@@ -306,34 +234,18 @@ const ingress = new k8s.networking.v1.Ingress(
       namespace: NAMESPACE,
       name: "blackcandy",
       annotations: {
-        "networking.gke.io/managed-certificates": certificate.metadata.name,
         "kubernetes.io/ingress.class": "gce",
-        "networking.gke.io/v1beta1.FrontendConfig":
-          frontendConfig.metadata.name,
       },
     },
     spec: {
-      rules: [
-        {
-          host: domain,
-          http: {
-            paths: [
-              {
-                path: "/*",
-                pathType: "ImplementationSpecific",
-                backend: {
-                  service: {
-                    name: blackcandyService.metadata.name,
-                    port: {
-                      number: 80,
-                    },
-                  },
-                },
-              },
-            ],
+      defaultBackend: {
+        service: {
+          name: blackcandyService.metadata.name,
+          port: {
+            number: 80,
           },
         },
-      ],
+      },
     },
   },
   { provider: k8sProvider }
@@ -343,6 +255,7 @@ new cloudDns.ResourceRecordSet(`${NAMESPACE}.interviews.binti.engineering`, {
   managedZone: "interviews-binti-engineering",
   name: `${domain}.`,
   type: "A",
+  ttl: 300, // 5 minutes
   rrdatas: ingress.status.loadBalancer.ingress.apply((entries) =>
     entries.map((entry) => entry.ip)
   ),

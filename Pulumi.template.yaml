@@ -1,9 +1,9 @@
 secretsprovider: gcpkms://projects/binti-devops-tests-candidate/locations/us-west1/keyRings/candidate-keys/cryptoKeys/pulumi
 encryptedkey: CiQAwMXZ+W4U9IxaPOFxC+Ox6rQEUQ7W6Ir9c+wcNHSOcg0NISQSSQBc9cDo/TE7OM5m8tvUxQtbPCelq2rWAXz632qHuOb+DwH4BPPSDpwDul2GqK4nN7p3OoFvpFszj7xcyKRRlWf55CKe8nNjulg=
 config:
+  blackcandy:gke-cluster-id:
+    secure: v1:HzbHfQvzSa4TDZfM:Qx8kU0m7vv7KsXXWKe6/OFr/5ElknsdSH6suWzMMPhXjZ5ru18em690=
+  blackcandy:vpc-id:
+    secure: v1:xGD7kZK5Q8XFO5SO:PVtp5RRF48x953rpLw9dHCjMX9Drc5YkyVALC1T80AW7gjtmloc=
   google-native:project:
     secure: v1:pvHUp8mowZNZnm5o:J/EhAWx6P2siQEtGd6DhwhR0QsMyX7pzWf+4HnhOcLkCzcQ1Y+GL4LE8Yhk=
-  blackcandy:gke-cluster-id:
-    secure: v1:/902OCvj5t2ql6Uo:BqWny2xSbXfd7o+89QOSeO8I2Ew6dW7qWwgyL7O7SUVwAAI3Vo95zaU=
-  blackcandy:vpc-id:
-    secure: v1:GGBhDlCtLhTeN56M:bDVS/rO5hv27VNhyMP15g6BZ0yoD0GnZCaQ+fFSrMrynrOLOrNk=

@@ -5,9 +5,8 @@ set -euo pipefail
 CANDIDATE_NAME=$1
 echo "Hi $CANDIDATE_NAME, let me get you up and running by authenticating!"
 
-gcloud init --no-browser --skip-diagnostics
-gcloud auth application-default login \
-  --no-browser
+gcloud init --skip-diagnostics
+gcloud auth application-default login
 
 CLUSTER="$(gcloud container clusters list --format=json | jq -r ".[0].name")"
 gcloud container clusters get-credentials $CLUSTER --region=us-west1

@@ -25,11 +25,11 @@ RUN curl -O https://dl.google.com/dl/cloudsdk/channels/rapid/downloads/google-cl
 RUN git clone https://github.com/asdf-vm/asdf.git ~/.asdf --branch v0.9.0 && \
     source ~/.asdf/asdf.sh &&  \
     asdf plugin add nodejs && \
-    asdf install nodejs 16.14.0 && \
-    asdf global nodejs 16.14.0 && \
+    asdf install nodejs 16.14.2 && \
+    asdf global nodejs 16.14.2 && \
     asdf plugin-add pulumi https://github.com/canha/asdf-pulumi.git && \
-    asdf install pulumi 3.24.1 && \
-    asdf global pulumi 3.24.1 && \
+    asdf install pulumi latest && \
+    asdf global pulumi latest && \
     asdf plugin add kubectl && \
     asdf install kubectl 1.23.3 && \
     asdf global kubectl 1.23.3

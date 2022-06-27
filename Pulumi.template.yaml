@@ -2,8 +2,10 @@ secretsprovider: gcpkms://projects/binti-devops-tests-candidate/locations/us-wes
 encryptedkey: CiQAwMXZ+W4U9IxaPOFxC+Ox6rQEUQ7W6Ir9c+wcNHSOcg0NISQSSQBc9cDo/TE7OM5m8tvUxQtbPCelq2rWAXz632qHuOb+DwH4BPPSDpwDul2GqK4nN7p3OoFvpFszj7xcyKRRlWf55CKe8nNjulg=
 config:
   blackcandy:gke-cluster-id:
-    secure: v1:4VgkI44izYQwjysS:7UoU2H3VEMCgDzn/+CYWRyKmI53LTmAZUf15baTlsgl21cOG36MPW9Y=
+    secure: v1:EhBMco9a3qw2yE8A:iaavym3xBG39vsS9BOhaYNSYoiL+XOeC61JXhxPKw1vLdozZx5VbFGo=
   blackcandy:vpc-id:
     secure: v1:UXe4OfbpnJCQ9X6a:lwVhOwUv5LK+32IWLLo4hBwogZw=
   google-native:project:
     secure: v1:pvHUp8mowZNZnm5o:J/EhAWx6P2siQEtGd6DhwhR0QsMyX7pzWf+4HnhOcLkCzcQ1Y+GL4LE8Yhk=
+  pulumi:disable-default-providers:
+    - kubernetes

@@ -78,18 +78,22 @@ function toBase64(payload: string): string {
   return Buffer.from(payload).toString("base64");
 }
 
-const secrets = new k8s.core.v1.Secret("db-secrets", {
-  metadata: {
-    name: "blackcandy-db-secrets",
-    namespace: NAMESPACE,
+const secrets = new k8s.core.v1.Secret(
+  "db-secrets",
+  {
+    metadata: {
+      name: "blackcandy-db-secrets",
+      namespace: NAMESPACE,
+    },
+    data: {
+      SECRET_KEY_BASE: railsSecret.result.apply(toBase64),
+      DB_PASSWORD: db.password.apply(toBase64),
+      DB_HOST: toBase64("localhost"),
+      DB_USER: db.user.name.apply(toBase64),
+    },
   },
-  data: {
-    SECRET_KEY_BASE: railsSecret.result.apply(toBase64),
-    DB_PASSWORD: db.password.apply(toBase64),
-    DB_HOST: toBase64("localhost"),
-    DB_USER: db.user.name.apply(toBase64),
-  },
-});
+  { provider: k8sProvider }
+);
 
 const deployment = new k8s.apps.v1.Deployment(
   "blackcandy",

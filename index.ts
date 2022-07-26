@@ -82,7 +82,6 @@ const secrets = new k8s.core.v1.Secret(
   "db-secrets",
   {
     metadata: {
-      name: "blackcandy-db-secrets",
       namespace: NAMESPACE,
     },
     data: {
@@ -100,7 +99,6 @@ const deployment = new k8s.apps.v1.Deployment(
   {
     metadata: {
       namespace: NAMESPACE,
-      name: "blackcandy",
       labels: {
         app: "blackcandy",
       },
@@ -205,7 +203,6 @@ const blackcandyService = new k8s.core.v1.Service(
   "blackcandy-svc",
   {
     metadata: {
-      name: "blackcandy-svc",
       namespace: NAMESPACE,
       annotations: {
         "cloud.google.com/neg": JSON.stringify({
@@ -236,7 +233,6 @@ const ingress = new k8s.networking.v1.Ingress(
   {
     metadata: {
       namespace: NAMESPACE,
-      name: "blackcandy",
       annotations: {
         "kubernetes.io/ingress.class": "gce",
       },
